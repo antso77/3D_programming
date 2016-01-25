@@ -1,0 +1,73 @@
+<!-- Antti Astikainen 1101552 -->
+<!doctype html>
+<html>
+<head>
+<style type="text/css">
+body{
+background-color:black;
+}
+
+#canvas{
+margin:15% 30%;
+border:1px solid white;
+width:600px;
+height:600px;
+}
+
+</style>
+
+<script src="three.js"></script>
+<script src="three.min.js"></script>
+</head>
+   <body>
+<canvas id="canvas"></canvas>
+<script id="vertex-shader" type="x-shader/x-vertex">
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 0.5);
+  }
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+  void main() {
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  }
+</script>
+
+<script>
+var canvas = document.getElementById('canvas');
+var scene = new THREE.Scene();
+var renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true});
+var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientWidth, 1, 1000);
+
+var quad = new THREE.Mesh(
+  new THREE.PlaneGeometry(2, 2),
+  new THREE.ShaderMaterial({
+    vertexShader: document.getElementById('vertex-shader').textContent,
+    fragmentShader: document.getElementById('fragment-shader').textContent,
+    depthWrite: false,
+    depthTest: false
+  })
+);
+scene.add(quad);
+
+var box = new THREE.Mesh(
+  new THREE.BoxGeometry(40, 40, 40),
+  new THREE.MeshBasicMaterial({color: '#ff0000'})
+);
+scene.add(box);
+
+camera.position.z = 180;
+camera.position.y = -30;
+camera.position.x = 0;
+
+renderer.render(scene, camera);
+
+      </script>
+	
+	</canvas>
+
+    </body>
+</html>
