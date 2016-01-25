@@ -1,0 +1,138 @@
+<!-- Antti A 1101552 -->
+
+<!doctype html>
+<html>
+<head>
+<style type="text/css">
+body{
+background-color:black;
+}
+
+#Canvas{
+margin:15% 30%;
+border:1px solid black;
+}
+
+</style>
+</head>
+   <body>
+      <canvas width = "600" height = "600" id = "Canvas"></canvas>
+
+      <script>
+
+         /*CANVAS*/
+         var canvas = document.getElementById('Canvas');
+         WEBgl = canvas.getContext('experimental-webgl');
+      
+		//shape
+
+				 var VERTICES = [
+					0.0,0.5,0.0,
+					-0.5,-0.5,0.0,
+					0.5,-0.5,0.5, 
+				 ];
+         
+				indices = [0,1,2];
+         
+         // BUFFER OBJECT
+         var Buffer = WEBgl.createBuffer();
+         // ARRAY FOR OBJECT
+         WEBgl.bindBuffer(WEBgl.ARRAY_BUFFER, Buffer);
+         //VERTICES TO BUFFER
+         WEBgl.bufferData(WEBgl.ARRAY_BUFFER, new Float32Array(VERTICES), WEBgl.STATIC_DRAW);
+         WEBgl.bindBuffer(WEBgl.ARRAY_BUFFER, null);
+
+         // CREATE EMPTY BUFFER
+         var INDEXBUFFER = WEBgl.createBuffer();
+         // SET ARRAY BUFFER
+         WEBgl.bindBuffer(WEBgl.ELEMENT_ARRAY_BUFFER, INDEXBUFFER);
+         // VERTICES FO BUFFER
+         WEBgl.bufferData(WEBgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), WEBgl.STATIC_DRAW);
+         // SET OF BUFFER
+         WEBgl.bindBuffer(WEBgl.ELEMENT_ARRAY_BUFFER, null);
+
+		
+         var verticesAtt =
+            'attribute vec3 coordinates;' +
+				
+            'void main(void) {' +
+               ' gl_Position = vec4(coordinates, 1.0);' +
+            '}';
+            
+         // VERTEX SHADER
+         var vShader = WEBgl.createShader(WEBgl.VERTEX_SHADER);
+
+         // vertex shader
+         WEBgl.shaderSource(vShader, verticesAtt);
+
+         // COMPILING VERTEX SHADER
+         WEBgl.compileShader(vShader);
+
+         //FRAGMENT SHADER SOURCE
+         var fragmentSrc =
+            'void main(void) {' +
+               ' gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);' +
+            '}';
+            
+         // CREATING FRAGMENT SHADER
+         var fragmentShader = WEBgl.createShader(WEBgl.FRAGMENT_SHADER);
+
+         //FRAGMENT SHADER CODE
+         WEBgl.shaderSource(fragmentShader, fragmentSrc); 
+         
+         // COMPILING FRAGMENT SHADER
+         WEBgl.compileShader(fragmentShader);
+
+         //PROGRAM OBJECT FOR SHADERS
+         var shaderSource = WEBgl.createProgram();
+
+         // VERTEX SHADER
+         WEBgl.attachShader(shaderSource, vShader);
+
+         //FRAGMENT SHADER
+        WEBgl.attachShader(shaderSource, fragmentShader);
+
+         // LINK SHADERS
+         WEBgl.linkProgram(shaderSource);
+
+         //COMBINED SHADER OBJECT
+       WEBgl.useProgram(shaderSource);
+
+         //SHADERs TO BUFFERS
+
+         //VERTEX BUFFER
+         WEBgl.bindBuffer(WEBgl.ARRAY_BUFFER, Buffer);
+
+         //INDEX BUFFER
+        WEBgl.bindBuffer(WEBgl.ELEMENT_ARRAY_BUFFER, INDEXBUFFER);
+         
+         // GET LOCATION
+         var coord = WEBgl.getAttribLocation(shaderSource, "coordinates");
+
+         // POINT ATTRIBUTE TO VERTEX BUFFER
+          WEBgl.vertexAttribPointer(coord, 3, WEBgl.FLOAT, false, 0, 0); 
+         
+         // ENABLE ATTRIBUTE
+         WEBgl.enableVertexAttribArray(coord);
+
+         /*=========Drawing the triangle===========*/
+
+         // CLEARING THE CANVAS
+         WEBgl.clearColor(1.5, 1.5, 1.5, 1.5);
+
+         //DEPTH TESTING
+          WEBgl.enable(WEBgl.DEPTH_TEST);
+
+         // CLEARING BUFFER BIT
+          WEBgl.clear(WEBgl.COLOR_BUFFER_BIT);
+
+         // VIEWPORT
+          WEBgl.viewport(0,0,canvas.width,canvas.height);
+
+         // TRIANGLE
+          WEBgl.drawElements(WEBgl.TRIANGLES, indices.length, WEBgl.UNSIGNED_SHORT,0);
+
+      </script>
+
+    </body>
+</html>
