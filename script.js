@@ -1,3 +1,4 @@
+//Antti Astikainen 1101552 3D pgromming module 3
 ///<reference path="gl-matrix.d.ts" />
 var canvas; 
 var gl; 
