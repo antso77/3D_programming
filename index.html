@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>1101552</title>
+		
+		<img id="negx" style="display: none" src="negx.jpg"></img>
+        <img id="negy" style="display: none" src="negy.jpg"></img>
+        <img id="negz" style="display: none" src="negz.jpg"></img>
+        <img id="posx" style="display: none" src="posx.jpg"></img>
+        <img id="posy" style="display: none" src="posy.jpg"></img>
+        <img id="posz" style="display: none" src="posz.jpg"></img>
+		
+		<link rel="stylesheet" type="text/css" href="style.css"></link>
+		
+        <script src="gl-matrix-min.js"> </script>
+        
+		<script src="script.js"> </script>
+		
+		<script id="shader-vs" type="x-shader/x-vertex">
+			precision mediump float;
+			
+			attribute vec3 aVertexPosition;
+			attribute vec2 aVertexTextureCoords;
+			
+			uniform mat4 uMMatrix;
+			uniform mat4 uVMatrix;
+			uniform mat4 uPMatrix;
+			
+			varying vec2 vTextureCoord;
+			
+			void main(void)
+			{
+				gl_Position = uPMatrix * uVMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+				vTextureCoord = aVertexTextureCoords;
+			}
+		</script>
+		
+		<script id="shader-fs" type="x-shader/x-fragment">
+			precision mediump float;
+			
+			uniform sampler2D uSampler;
+			
+			varying vec2 vTextureCoord;
+			
+			void main(void)
+			{
+				gl_FragColor = texture2D(uSampler, vTextureCoord);
+			}	
+		</script>
+		
+	</head>
+	
+	<body onload="main()">
+		<canvas id="Canvas" width="800" height="600">
+			Your browser does not support the HTML5 canvas element.
+		</canvas>
+	</body>
+</html>
