@@ -117,7 +117,7 @@ function render()
         
         oldMouseX = mouseX; //  SAVE CURRENT MOUSE POSITION
         
-        if (handRotation < -0.9) //  LIMIT HAND ROTATION TO +/- 0.7 RADIANS 
+        if (handRotation < -0.9) //  LIMIT HAND ROTATION TO +/- 0.9 RADIANS 
             handRotation = -0.9;
         if (handRotation > 0.9)
             handRotation = 0.9;
