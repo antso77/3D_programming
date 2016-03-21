@@ -1,10 +1,38 @@
 /*ANTTI ASTIKAINEN 1101552 3D PROGRAMMING*/
-var scene = new THREE.Scene(); // CREATE THREE JS SCENE
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); //  CREATE PERSPECTIVE CAMERA
-var renderer = new THREE.WebGLRenderer(); //  CREATE RENDERER THEN WILL USE WEBGL
-
-renderer.setSize(window.innerWidth, window.innerHeight); //  SET RENDERER SIZE TO BE SAME AS SIZE OF INNER WINDOW
-document.body.appendChild(renderer.domElement); //  ATTACH CANVAS ELEMENT TO BODY
+var scene = new THREE.Scene(); // REATE THREE JS SCENE
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); // PERSPECTIVE CAMERA
+var renderer = new THREE.WebGLRenderer(); 
+renderer.setSize(window.innerWidth, window.innerHeight); // SET RENDERER SIZE TO BE SAME AS SIZE OF INNER BROWSER WINDOW
+document.body.appendChild(renderer.domElement); // ATTACH CANVAS ELEMENT TO BODY ELEMENT INSIDE WEB PAGE
+var sceneLoader = new THREE.ObjectLoader(); // CREATING LOADER THAT WE WILL USE TO LOAD MESHES (SCENE)
+sceneLoader.load("scene/scene.json", sceneLoaded); // LOAD SCENE FILE (MESHES)
+var directionalLight = new THREE.DirectionalLight( 0xE6F3F7, 1.0 ); // DIRECTIONAL LIGHT INITIALIZATION
+directionalLight.position.set( 1, -1, 1 ); 
+var light = new THREE.SpotLight(0x00ff00); // SPOT LIGHT INITIALIZATIOn
+light.position.set(0, 5, 0);
+light.angle = 0.5;
+light.intensity = 2;
+light.penumbra = 0.15;
+var urlPrefix = "./assets/skybox/"; // here we LOAD SKYBOX TEXTURES
+var urls = [urlPrefix + "posx.png", urlPrefix + "negx.png",
+    urlPrefix + "posy.png", urlPrefix + "negy.png",
+    urlPrefix + "posz.png", urlPrefix + "negz.png"];
+var cubeTexture = new THREE.CubeTextureLoader(); // CREATE CUBE TEXTURE LOADER
+var textureCube = cubeTexture.load(urls); // LOAD SKYBOX TEXTURES INSIDE CUBE TEXTURE
+var shader = THREE.ShaderLib["cube"]; // USING CUBE TEXTURE WE CREATED WE CREATE SKYBOX 
+var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
+uniforms['tCube'].texture = textureCube;
+var material = new THREE.ShaderMaterial({
+    fragmentShader: shader.fragmentShader,
+    vertexShader: shader.vertexShader,
+    uniforms: uniforms
+});
+// BUILD THE SKYBOX MESH 
+var skyboxMesh = new THREE.Mesh(new THREE.CubeGeometry(100000, 100000, 100000, 1, 1, 1), material);
+// ADD IT TO THE SCENE
+scene.add(skyboxMesh); // ADD SKYBOX MESH
+scene.add(directionalLight);// ADD DIRECTIONAL LIGHT TO SCENE
+scene.add(light); // ADD SPOTLIGHT TO SCENE
 
 var upperArm = new THREE.BoxGeometry(0.45, 1.75, 0.45); // CREATE GEOMETRY FOR ARM PARTS
 var lorArm = new THREE.BoxGeometry(0.45, 1.75, 0.45);
@@ -46,10 +74,10 @@ handMesh.add(fingerThumb); // HAND IS PARENT OF FINGER THUMB
 
 scene.add(shoulderMesh); //  ADD SHOULDER MESH (OTHER OBJECTS ARE ALSO ADDED SINCE THEY ARE CHILDREN OF SHOULDER)
 
-camera.position.x = 5; //  SET CAMERA POSITION 
-camera.position.y = 5;
-camera.position.z = 5;
-camera.lookAt(new THREE.Vector3(0, 0, 0)); //  SET POINT FOR CAMERA VIEW
+camera.position.x = 9; //  SET CAMERA POSITION 
+camera.position.y = 4.5;
+camera.position.z = 8;
+camera.lookAt(new THREE.Vector3(1, 3, 0)); //  SET POINT FOR CAMERA VIEW
 
 // VARIABLES FOR ROTATION
 var shoulderRotation = 0.0; // UPPER HAND ROTATION
@@ -92,53 +120,41 @@ fingerThumb.position.x = 0.6;
 fingerThumb.position.y = 0.6;
 fingerThumb.position.z = 0.0;
 
-requestAnimationFrame(render); //  STARTING RENDER LOOP
-function render() 
-{
-    requestAnimationFrame(render); //  NEW FRAME RENDER
-    
-    shoulderRotation += 0.01; //  ADD TO UPPER HAND ROTATION EACH FRAME
-    shoulderMesh.rotation.z = Math.sin(shoulderRotation) / 1.5; //  CALCULATE SHOULDER ROTATION
-    
-    elbowRotation += 0.01; //  ADD TO LOWER HAND ROTATION EACH FRAME
-    elbowMesh.rotation.z = Math.sin(elbowRotation) / 1.5; //  CALCULATE ELBOW ROTATION USING SIN
-    
-    if (drag == true) // IF DRAGGIN MOUSE 
-    {
-        if ((mouseX - oldMouseX) > 0) // IF MOVING MOUSE RIGHT REDUCE ROTATION
-        {
+requestAnimationFrame(render); // START RENDER LOOP
+function render() {
+    requestAnimationFrame(render); // REQUEST NEW FRAME EACH TIME WE RENDER (THIS IS EXECUTED 60 TIMES PER SECOND)
+    shoulderRotation += 0.01; //UPPER HAND ROTATION TO EACH FRAME
+    shoulderMesh.rotation.z = Math.sin(shoulderRotation) / 1.5; // CALCULATE ACTUAL SHOULDER ROTATION USING SIN FUNCTION
+    elbowRotation += 0.01; // ADD LOWER HAND ROTATION EACH FRAME
+    elbowMesh.rotation.z = Math.sin(elbowRotation) / 1.5; // CALCULATE ELBOW ROTATION USING SIN FUNCTION
+    if (drag == true) {
+        if ((mouseX - oldMouseX) > 0) {
             handRotation -= 0.015;
         }
-        else if ((mouseX - oldMouseX) < 0) // IF MOVING MOUSE LEFT ADD ROTATION
-        {
+        else if ((mouseX - oldMouseX) < 0) {
             handRotation += 0.015;
         }
-        handMesh.rotation.x = handRotation; //  SET HAND ROTATION
-        
-        oldMouseX = mouseX; //  SAVE CURRENT MOUSE POSITION
-        
-        if (handRotation < -0.9) //  LIMIT HAND ROTATION TO +/- 0.9 RADIANS 
-            handRotation = -0.9;
-        if (handRotation > 0.9)
-            handRotation = 0.9;
+        handMesh.rotation.x = handRotation; // SET ACTUAL HAND ROTATION TO BE VALUE WE CALCULATED BY DRAGGIN MOUSE
+        oldMouseX = mouseX; // SAVE CURRENT MOUSE POSITION (IT WILL BE OLD IN NEXT FRAME)
+        if (handRotation < -0.7)
+            handRotation = -0.7;
+        if (handRotation > 0.7)
+            handRotation = 0.7;
     }
-    renderer.render(scene, camera); //  RENDER SCENE USING CAMERA
+    renderer.render(scene, camera); // RENDER SCENE USING CAMERA
 }
-
-var oldMouseX = 0; // OLD MOUSE POSITION X VARIABLE (USED IN CURRENT FRAME FROM PREVIUS FRAME TO DETERMINE IN WHICH WAY MOUSE IF MOVING)
-var mouseX = 0; // CURRENT MOUSE POSITION X VARIABLE
-var drag = false; // DRAG IS FALSE ON START
-addEventListener("mousedown", function (event) // IF  CLICK MOUSE DRAG IS TRUE
-{
+function sceneLoaded(obj) {
+    scene.add(obj);
+}
+var oldMouseX = 0; 
+var mouseX = 0; 
+var drag = false; 
+addEventListener("mousedown", function (event) {
     drag = true;
 });
-
-addEventListener("mouseup", function (event) // RELEASE MOUSE DRAG IS FALSE
-{
+addEventListener("mouseup", function (event) {
     drag = false;
 });
-
-addEventListener("mousemove", function (event) // IF MOUSE IS PRESSED  SAVE CURRENT X VALUE OF MOUSE POINTER ON SCREEN
-{
+addEventListener("mousemove", function (event) {
     mouseX = event.clientX;
 });
