@@ -1,15 +1,456 @@
-<!--Antti Astikainen 1101552 #D programming-->
+<!--ANTTI ASTIKAINEN 1101552 3D PROGRAMMING-->
+
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Module 5 1101552</title>
+
+		<title>Module 6 1101552</title>
+		<style type="text/css">
+		body 
+		{
+			font-family: Monospace;
+			font-weight: bold;
+			background-color: #ccccff;
+			margin: 0px;
+			overflow: hidden;
+		}
+		</style>
 		
 		<link rel="stylesheet" type="text/css" href="./css/style.css"></link>
 	</head>
 	
 	<body>
-        <script src="./lib/three.min.js"> </script>
-        
-        <script src="./js/script.js"> </script>
+
+        <script src="three.js"> </script>
+        <script src="jquery-1.9.1.min.js"> </script>
+        <script src="CanvasRenderer.js"> </script>
+        <script src="Detector.js"> </script>
+        <script src="first.person.controls.js"></script>
+
+       <div id="My" style="position: absolute; left:0px; top:0px"></div>
+<script>
+var container, scene, camera, renderer;
+var clock = new THREE.Clock();
+var clock1 = new THREE.Clock();
+var CamClock = new THREE.Clock();
+var firstPersonControls;
+// custom global variables
+var cube;
+
+
+var upperArm = new THREE.BoxGeometry(0.45, 1.75, 0.45); // here we create geometry for parts of the arm 
+var lowerArm = new THREE.BoxGeometry(0.45, 1.75, 0.45);
+var sphere = new THREE.SphereGeometry(0.8, 30, 30);
+var sphereSmall = new THREE.SphereGeometry(0.5, 30, 30);
+var hand = new THREE.BoxGeometry(0.9, 0.9, 0.7);
+var finger = new THREE.BoxGeometry(0.15, 0.5, 0.15); // we only create on geometry for finger since  they are all same
+hand.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0)); // we move pivot point of hand object so it rotates around its base and not aroud centar
+var green = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // we create different materilas (colors) for part of the hand
+var red = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+var pink = new THREE.MeshPhongMaterial({ color: 0xff85f1 });
+var yellow = new THREE.MeshPhongMaterial({ color: 0xfffB00 });
+var blue = new THREE.MeshPhongMaterial({ color: 0x0000ff });
+var paleOrange = new THREE.MeshPhongMaterial({ color: 0xffe4a8 });
+var shoulderMesh = new THREE.Mesh(sphere, red); // we create actual mesh objects that we will render using geometry and materials we created above
+var upperArmMesh = new THREE.Mesh(upperArm, green);
+var elbowMesh = new THREE.Mesh(sphereSmall, pink);
+var lowerArmMesh = new THREE.Mesh(lowerArm, yellow);
+var handMesh = new THREE.Mesh(hand, blue);
+var fingerOne = new THREE.Mesh(finger, paleOrange);
+var fingerTwo = new THREE.Mesh(finger, paleOrange);
+var fingerThree = new THREE.Mesh(finger, paleOrange);
+var fingerThumb = new THREE.Mesh(finger, paleOrange);
+fingerThumb.rotation.z = Math.PI / 2; // we rotate thumb finger by PI/2 radians 
+// this is where we create hand composition
+shoulderMesh.add(upperArmMesh); // shoulder is parent of upper arm
+upperArmMesh.add(elbowMesh); // upper arm is parent of elbow 
+elbowMesh.add(lowerArmMesh); // elbow is parrent of lower arm
+lowerArmMesh.add(handMesh); // lower arm is parent of hand
+handMesh.add(fingerOne); // hand is parent of finger one 
+handMesh.add(fingerTwo); // hand is parent of finger two
+handMesh.add(fingerThree); // hand is parent of finger three
+handMesh.add(fingerThumb); // hand is parent of finger thumb
+// variables for hand rotation
+var shoulderRotation = 0.0; // upper hand rotation
+var elbowRotation = 0.0; // lower arm rotation
+var handRotation = 0.0; // hand rotation
+shoulderMesh.position.x = 8.0; // here we set initial values for hand parts 
+shoulderMesh.position.y = -3.6;
+shoulderMesh.position.z = 0.0;
+upperArmMesh.position.x = 0.0;
+upperArmMesh.position.y = 1.5;
+upperArmMesh.position.z = 0.0;
+elbowMesh.position.x = 0.0;
+elbowMesh.position.y = 1.25;
+elbowMesh.position.z = 0.0;
+lowerArmMesh.position.x = 0.0;
+lowerArmMesh.position.y = 1.25;
+lowerArmMesh.position.z = 0.0;
+handMesh.position.x = 0.0;
+handMesh.position.y = 0.6;
+handMesh.position.z = 0.0;
+fingerOne.position.x = -0.3;
+fingerOne.position.y = 1.17;
+fingerOne.position.z = 0.0;
+fingerTwo.position.x = 0.0;
+fingerTwo.position.y = 1.17;
+fingerTwo.position.z = 0.0;
+fingerThree.position.x = 0.3;
+fingerThree.position.y = 1.17;
+fingerThree.position.z = 0.0;
+fingerThumb.position.x = 0.6;
+fingerThumb.position.y = 0.6;
+fingerThumb.position.z = 0.0;
+
+
+
+init();
+animate();
+
+
+
+// FUNCTIONS        
+function init() 
+{
+    // SCENE
+    scene = new THREE.Scene();
+
+    var sceneLoader = new THREE.ObjectLoader(); // here we are creating loader that we will use to load meshes (scene)
+	sceneLoader.load("scene/scene.json", sceneLoaded); // we load scene file (meshes)
+    // CAMERA
+    var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+    var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+    camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+    scene.add(camera);
+    camera.position.set(0,150,400);
+    camera.lookAt(scene.position);  
+
+    firstPersonControls = new THREE.FirstPersonControls(camera);
+	firstPersonControls.lookSpeed = 0.15;
+	firstPersonControls.movementSpeed = 4;
+	firstPersonControls.noFly = false;
+	firstPersonControls.lookVertical = true;
+	firstPersonControls.constrainVertical = true;
+	firstPersonControls.verticalMin = 0.0;
+	firstPersonControls.verticalMax = 3.14;
+	firstPersonControls.lat = -43.78;
+	firstPersonControls.lon = 61.50;
+
+	camera.position.z = -15;
+	camera.position.y = 1.6;
+	camera.position.x = -3.6;
+    // RENDERER
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+    renderer = new THREE.CanvasRenderer(); 
+    renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+    container = document.getElementById( 'My' );
+    container.appendChild( renderer.domElement );
+    // EVENTS
+	renderer.shadowMapEnabled = true;
+
+    // FIRE
+
+
+ 
+
+
+
+    // LIGHT
+
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 2.5 );
+	directionalLight.position.set( 0, 5, 0 );
+
+	directionalLight.shadowCameraRight     =  5;
+	directionalLight.shadowCameraLeft     = -5;
+	directionalLight.shadowCameraTop      =  5;
+	directionalLight.shadowCameraBottom   = -5;
+
+	shoulderMesh.castShadow = true;
+	scene.add( directionalLight );
+
+    var Slight = new THREE.SpotLight(0xff0000); // Light initialization
+		Slight.position.set(0, 5, 0);
+		Slight.angle = 0.5;
+		Slight.intensity = 2;
+		Slight.penumbra = 0.15;
+
+		scene.add(Slight);
+
+
+    var light = new THREE.PointLight(0xffffff);
+    light.position.set(0,250,0);
+    scene.add(light);
+    // FLOOR
+    var floorTexture = new THREE.ImageUtils.loadTexture( 'rock.jpg' );
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+    floorTexture.repeat.set( 1, 1 );
+    var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+    var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 100, 100);
+    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.y = -5;
+    floor.rotation.x = Math.PI / 2;
+    scene.add(floor);
+    
+    scene.add(shoulderMesh); 
+    
+    var imagePrefix = "assets/skybox/";
+    var directions  = ["negx", "posx", "negy", "posy", "posz", "negz"];
+    var imageSuffix = ".png";
+    var skyGeometry = new THREE.CubeGeometry( 5000, 5000, 5000 );   
+    
+    var materialArray = [];
+    for (var i = 0; i < 6; i++)
+        materialArray.push( new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+            side: THREE.BackSide
+        }));
+    var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+    var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+    scene.add( skyBox );
+
+
+
+    particleSystem = FireParticleSystem();
+    scene.add(particleSystem);
+
+    SmokeSystem = SmokeParticleSystem();
+    scene.add(SmokeSystem);
+
+    //Add trees to the scene
+    Limes(15,10,0);
+    Limes(20,10,0);
+    Limes(25,10,0);
+    Limes(30,10,0);
+    Limes(35,10,0);
+    Limes(40,10,0);
+    Pines(8,7,10);
+    Pines(16,7,20);
+    Pines(24,7,30);
+    Pines(8,7,40);
+    Pines(16,7,50);
+    Pines(24,7,60);
+
+
+
+
+    
+
+}
+
+
+//Add a method to create tree
+//Limetree
+function Limes(x,y,z){
+        var limegeometry = new THREE.PlaneGeometry(5, 10, 32);
+        var limematerial = new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture("lime.png"),
+            side: THREE.DoubleSide,
+            depthTest: true,
+            depthWrite: true,
+            transparent: true,
+            blending: THREE.NormalBlending
+        });
+
+        var limeX = new THREE.Mesh(limegeometry,limematerial);
+        limeX.rotation.y -= Math.PI/2;
+        limeX.position.set(x,y,z);
+        scene.add(limeX); 
+
+        var limeY = new THREE.Mesh(limegeometry,limematerial);
+        limeY.position.set(x,y,z);
+        scene.add(limeY); 
+
+}
+
+//pinetree
+function Pines(x,y,z){
+        var pinegeometry = new THREE.PlaneGeometry(5, 10, 32);
+        var pinematerial = new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture("pine.png"),
+            side: THREE.DoubleSide,
+            depthTest: true,
+            depthWrite: true,
+            transparent: true,
+            blending: THREE.NormalBlending
+        });
+
+        var pineX = new THREE.Mesh(pinegeometry,pinematerial);
+        pineX.rotation.y -= Math.PI/2;
+        pineX.position.set(x,y,z);
+        scene.add(pineX); 
+
+        var pineY = new THREE.Mesh(pinegeometry,pinematerial);
+        pineY.position.set(x,y,z);
+        scene.add(pineY); 
+
+}
+
+
+function FireParticleSystem() {
+     
+    // The number of particles in a particle system is not easily changed.
+    var particleCount = 20;
+     
+    //geometry that will hold all of the vertices
+    var particles = new THREE.Geometry();
+ 
+    // Create the vertices and add them to the particles geometry
+    for (var p = 0; p < particleCount; p++) {
+     
+        // This will create all the vertices in a range of -200 to 200 in all directions
+               
+        // Create the vertex
+        var particle = new THREE.Vector3(1, 0, 1);
+         
+        // Add the vertex to the geometry
+        particles.vertices.push(particle);
+    }
+ 
+    // Create the material that will be used to render each vertex of the geometry
+    var particleMaterial = new THREE.ParticleBasicMaterial(
+            {        map: THREE.ImageUtils.loadTexture("fire.png"),
+                     size: 5,
+                    transparent: true,
+                     blending: THREE.CustomBlending,
+                    blendEquation: THREE.AddEquation,
+                    blendSrc: THREE.SrcAlphaFactor,
+                    blendDst: THREE.OneFactor,
+                    depthWrite: false
+
+            });
+      
+    // Create the particle system
+    FireParticleSystem = new THREE.Points(particles, particleMaterial);
+     //X location of smoke
+    FireParticleSystem.position.x = 0;
+     //Y location of smoke
+    FireParticleSystem.position.y = -2;
+    return FireParticleSystem;  
+}
+
+function SmokeParticleSystem() {
+     
+    // The number of particles in a particle system is not easily changed.
+    var particleCountSmoke = 10;
+     
+    // Particles are just individual vertices in a geometry
+    // Create the geometry that will hold all of the vertices
+    var smokeparticles = new THREE.Geometry();
+ 
+    // Create the vertices and add them to the particles geometry
+    for (var p = 0; p < particleCountSmoke; p++) {
+     
+        // This will create all the vertices in a range of -200 to 200 in all directions
+               
+        // Create the vertex
+        var smokeparticle = new THREE.Vector3(10, 2, 0);
+         
+        // Add the vertex to the geometry
+        smokeparticles.vertices.push(smokeparticle);
+    }
+ 
+    // Create the material that will be used to render each vertex of the geometry
+    var SmokeparticleMaterial = new THREE.ParticleBasicMaterial(
+            {       
+                    map: THREE.ImageUtils.loadTexture("smoke.png"),
+                    color: new THREE.Color("rgb(50, 50, 50)"),
+                    size: 5,
+                    transparent: true,
+                    blending: THREE.CustomBlending,
+                    blendEquation: THREE.AddEquation,
+                    blendSrc: THREE.SrcAlphaFactor,
+                    blendDst: THREE.OneFactor,
+                    depthWrite: false
+
+            });
+      
+    // Create the particle system
+    SmokeParticleSystem = new THREE.Points(smokeparticles, SmokeparticleMaterial);
+    //Y location of smoke
+    SmokeParticleSystem.position.y = 1; 
+    return SmokeParticleSystem;  
+}
+
+function animateFire() {
+
+    //animating fire particles
+    var deltaS = clock.getDelta();
+    var verts = FireParticleSystem.geometry.vertices;
+    for(var i = 0; i < verts.length; i++) {
+        var vert = verts[i];
+        if (vert.y < 0) {
+            vert.y = Math.random();
+            vert.x = Math.random() / 2;
+        }
+        vert.y = vert.y - (deltaS);
+        vert.x = vert.x - (deltaS);
+    }
+    FireParticleSystem.geometry.verticesNeedUpdate = true;
+     
+}
+
+function animateSmoke() {
+
+    //animating smoke particles
+    var deltaTime = clock1.getDelta();
+    var verts = SmokeParticleSystem.geometry.vertices;
+    for(var i = 0; i < verts.length; i++) {
+        var vert = verts[i];
+        if (vert.x < 0) {
+            vert.y = Math.random() * 2;
+            vert.x = Math.random() * 2;
+        }
+        vert.y = vert.y - (deltaTime);
+        vert.x = vert.x - (2 * deltaTime);
+    }
+    SmokeParticleSystem.geometry.verticesNeedUpdate = true;
+     
+}
+
+
+
+
+function animate() 
+{    
+    animateSmoke();
+    animateFire();
+    requestAnimationFrame( animate );	
+    
+    render();       
+    update();
+}
+
+function update()
+{
+    var delta = CamClock.getDelta();
+    firstPersonControls.update(delta);
+    camera.position.y = 9.6;             
+
+}
+
+function render() 
+{   
+
+
+    shoulderRotation += 0.01; // we add to upper hand rotation each frame
+    shoulderMesh.rotation.z = Math.sin(shoulderRotation) / 1.5; // we calculate actual shoulder rotation using sin function
+    elbowRotation += 0.01; // we add to lower hand rotation each frame
+    elbowMesh.rotation.z = Math.sin(elbowRotation) / 1.5; // we calculate actual elbow rotation using sin function
+
+
+	var sky = scene.getObjectByName("sky.js");
+    sky.rotation.y += 0.001;
+    renderer.render( scene, camera );
+}
+
+function sceneLoaded(obj) {
+    scene.add(obj);
+}
+
+
+
+</script>
 	</body>
 </html>
